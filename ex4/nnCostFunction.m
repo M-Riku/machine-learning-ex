@@ -1,8 +1,8 @@
 function [J grad] = nnCostFunction(nn_params, ...
-                                   input_layer_size, ...
-                                   hidden_layer_size, ...
-                                   num_labels, ...
-                                   X, y, lambda)
+  input_layer_size, ...
+  hidden_layer_size, ...
+  num_labels, ...
+  X, y, lambda)
 %NNCOSTFUNCTION Implements the neural network cost function for a two layer
 %neural network which performs classification
 %   [J grad] = NNCOSTFUNCTON(nn_params, hidden_layer_size, num_labels, ...
@@ -17,14 +17,14 @@ function [J grad] = nnCostFunction(nn_params, ...
 % Reshape nn_params back into the parameters Theta1 and Theta2, the weight matrices
 % for our 2 layer neural network
 Theta1 = reshape(nn_params(1:hidden_layer_size * (input_layer_size + 1)), ...
-                 hidden_layer_size, (input_layer_size + 1));
+hidden_layer_size, (input_layer_size + 1));
 
 Theta2 = reshape(nn_params((1 + (hidden_layer_size * (input_layer_size + 1))):end), ...
-                 num_labels, (hidden_layer_size + 1));
+num_labels, (hidden_layer_size + 1));
 
 % Setup some useful variables
 m = size(X, 1);
-         
+
 % You need to return the following variables correctly 
 J = 0;
 Theta1_grad = zeros(size(Theta1));
@@ -62,39 +62,75 @@ Theta2_grad = zeros(size(Theta2));
 %               and Theta2_grad from Part 2.
 %
 
-y_one_hot = zeros(size(y, 1), num_labels);
-for n = 1:size(y, 1)
-    y_one_hot(n, y(n)) = 1;
-end;
-a1 = [ones(size(X, 1), 1), X];
-z2 = a1 * Theta1';
-a2 = [ones(size(z2, 1), 1), sigmoid(z2)];
-z3 = a2 * Theta2';
-a3 = sigmoid(z3);
-h = a3;
-J_t = zeros(size(y, 1), 1);
-for n = 1:size(y,1)
-    J_t(n) = sum(-y_one_hot(n, :) .* log(h(n, :)) - (1 - y_one_hot(n, :)) .* log(1 - h(n, :)));
-end;
-J = sum(J_t) / m + lambda / (2 * m) *(sum(sum(Theta1(:, 2:end) .^ 2)) + sum(sum(Theta2(:, 2:end) .^ 2)));
+% y_one_hot = zeros(size(y, 1), num_labels);
+% for n = 1:size(y, 1)
+%     y_one_hot(n, y(n)) = 1;
+% end;
+% a1 = [ones(size(X, 1), 1), X];
+% z2 = a1 * Theta1';
+% a2 = [ones(size(z2, 1), 1), sigmoid(z2)];
+% z3 = a2 * Theta2';
+% a3 = sigmoid(z3);
+% h = a3;
+% J_t = zeros(size(y, 1), 1);
+% for n = 1:size(y,1)
+%     J_t(n) = sum(-y_one_hot(n, :) .* log(h(n, :)) - (1 - y_one_hot(n, :)) .* log(1 - h(n, :)));
+% end;
+% J = sum(J_t) / m + lambda / (2 * m) *(sum(sum(Theta1(:, 2:end) .^ 2)) + sum(sum(Theta2(:, 2:end) .^ 2)));
 
-% -------------------------------------------------------------
 
-Delta1 = zeros(size(Theta1));
-Delta2 = zeros(size(Theta2));
+% Delta1 = zeros(size(Theta1));
+% Delta2 = zeros(size(Theta2));
 
-for i = 1 : m
-  delta3 = a3(i, :) - y(i, :);
-  delta2 = delta3 * Theta2(:, 2:end) .* sigmoidGradient(z2(i, :));
-  Delta2 = Delta2 + delta3' * a2(i, :);
-  Delta1 = Delta1 + delta2' * a1(i, :);
-end;
+% for i = 1 : m
+%   delta3 = a3(i, :) - y(i, :);
+%   delta2 = delta3 * Theta2(:, 2:end) .* sigmoidGradient(z2(i, :));
+%   Delta2 = Delta2 + delta3' * a2(i, :);
+%   Delta1 = Delta1 + delta2' * a1(i, :);
+% end;
 
-Theta2_grad = Delta2 / m;
-Theta1_grad = Delta1 / m;
+% Theta2_grad = Delta2 / m;
+% Theta1_grad = Delta1 / m;
 
-Theta2_grad(:, 2:end) = Theta2_grad(:, 2:end) + lambda * Theta2(:, 2:end) / m;
-Theta1_grad(:, 2:end) = Theta1_grad(:, 2:end) + lambda * Theta1(:, 2:end) / m;
+% Theta2_grad(:, 2:end) = Theta2_grad(:, 2:end) + lambda * Theta2(:, 2:end) / m;
+% Theta1_grad(:, 2:end) = Theta1_grad(:, 2:end) + lambda * Theta1(:, 2:end) / m;
+
+X = [ones(m,1) X];                 % add a column of ones
+for i = 1:m
+  a1 = X(i,:);
+  a1 = a1';                      % a1 is a column vector
+  % layer 2
+  z2 = Theta1 * a1;              % z2 is a 25x1 column vector
+  a2 = sigmoid(z2);              % calculate the a2, a2 is a 25x1 column vector
+  a2 = [1; a2];                  % add a bias term
+  % layer 3
+  z3 = Theta2 * a2;              
+  a3 = sigmoid(z3);              % calculate the a3 which is the output, a3 is a column vector
+
+  p = zeros(num_labels, 1);      % p is 10x1 column vector
+  p(y(i)) = 1;
+  J = J + sum((-p).*log(a3) - (1-p).*log(1-a3));
+
+  % backpropagation;
+  delta3 = a3 - p;
+  delta2 = Theta2(:,2:end)' * delta3 .* sigmoidGradient(z2);
+  Theta1_grad = Theta1_grad + delta2 * a1';
+  Theta2_grad = Theta2_grad + delta3 * a2';
+end
+J = J / m;
+Theta1_grad = Theta1_grad / m;
+Theta2_grad = Theta2_grad / m;
+
+temp1 = Theta1(:,2:size(Theta1,2)).^2; 
+temp2 = Theta2(:,2:size(Theta2,2)).^2;
+
+reg = lambda / (2*m) * (sum(temp1(:)) + sum(temp2(:)));
+J = J + reg; 
+
+Theta1(:,1) = 0;
+Theta2(:,1) = 0;
+Theta1_grad = Theta1_grad + lambda / m * Theta1;
+Theta2_grad = Theta2_grad + lambda / m * Theta2;
 
 % =========================================================================
 
